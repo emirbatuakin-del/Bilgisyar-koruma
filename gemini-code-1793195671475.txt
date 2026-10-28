@@ -1,0 +1,4 @@
+tesla-guvenlik-sistemi/
+├── index.html       # Ana Arayüz (Tesla Sentry Stili, Beyaz Tema, PIN, Zamanlayıcı, Sensörler ve Ses Motoru)
+├── manifest.json    # PWA Kimlik ve Mobil/Masaüstü Uygulama Kurulum Dosyası
+└── sw.js            # Service Worker (Çevrimdışı ve Kesintisiz Arka Plan Çalışma Desteği)

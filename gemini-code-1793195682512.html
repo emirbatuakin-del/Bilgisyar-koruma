@@ -1,0 +1,12 @@
+<!-- Manifest Bağlantısı -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ffffff">
+
+<script>
+  // Service Worker Kaydı (İnternetsiz Kullanım İçin)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+      .then(() => console.log('PWA Servisi Aktif, Komutanım!'))
+      .catch((err) => console.log('SW Hatası:', err));
+  }
+</script>
