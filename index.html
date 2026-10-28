@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tesla Sentry Security Mode</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ffffff">
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #111111;
+            --accent-color: #0066cc;
+            --danger-color: #ff3b30;
+            --border-color: #e0e0e0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; user-select: none; }
+        body { background-color: var(--bg-color); color: var(--text-color); width: 100vw; height: 100vh; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; }
+        .bg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+        .mode-radar { background: radial-gradient(circle, rgba(0,102,204,0.05) 0%, rgba(255,255,255,1) 70%), linear-gradient(to right, #f0f0f0 1px, transparent 1px), linear-gradient(to bottom, #f0f0f0 1px, transparent 1px); background-size: 100% 100%, 40px 40px, 40px 40px; }
+        .mode-cctv { background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03)); background-size: 100% 4px, 6px 100%; }
+        .mode-white { background-color: #ffffff; }
+        .mode-cyber { background-image: linear-gradient(to right, rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.05) 1px, transparent 1px); background-size: 20px 20px; }
+        .container { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; padding: 20px; }
+        .top-bar { position: absolute; top: 20px; left: 30px; right: 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
+        .brand { font-size: 18px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+        .status-badge { font-size: 13px; font-weight: 600; padding: 6px 14px; border-radius: 20px; background: #f0f0f0; color: #555; letter-spacing: 1px; }
+        .status-badge.armed { background: rgba(0, 102, 204, 0.1); color: var(--accent-color); }
+        .status-badge.alarm { background: rgba(255, 59, 48, 0.15); color: var(--danger-color); animation: pulse-alert 1s infinite alternate; }
+        @keyframes pulse-alert { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0.6; transform: scale(1.05); } }
+        .sentry-box { text-align: center; max-width: 450px; width: 100%; padding: 30px; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px); border: 1px solid var(--border-color); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .sentry-title { font-size: 28px; font-weight: 800; letter-spacing: 3px; margin-bottom: 8px; text-transform: uppercase; }
+        .sentry-subtitle { font-size: 14px; color: #666; margin-bottom: 25px; }
+        .radar-icon { width: 80px; height: 80px; margin: 0 auto 20px auto; border: 2px solid var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; position: relative; }
+        .radar-icon::after { content: ''; width: 12px; height: 12px; background: var(--accent-color); border-radius: 50%; animation: radar-pulse 2s infinite; }
+        @keyframes radar-pulse { 0% { transform: scale(0.8); opacity: 1; box-shadow: 0 0 0 0 rgba(0,102,204, 0.4); } 70% { transform: scale(1.2); opacity: 0.4; box-shadow: 0 0 0 20px rgba(0,102,204, 0); } 100% { transform: scale(0.8); opacity: 1; box-shadow: 0 0 0 0 rgba(0,102,204, 0); } }
+        .pin-display { display: flex; justify-content: center; gap: 12px; margin-bottom: 20px; }
+        .pin-dot { width: 16px; height: 16px; border: 2px solid #ccc; border-radius: 50%; transition: all 0.2s; }
+        .pin-dot.filled { background: var(--text-color); border-color: var(--text-color); }
+        .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+        .key-btn { background: #f7f7f7; border: 1px solid var(--border-color); padding: 15px; font-size: 18px; font-weight: 600; border-radius: 8px; cursor: pointer; transition: background 0.2s; }
+        .key-btn:hover { background: #eeeeee; }
+        .btn-primary { width: 100%; padding: 14px; background: var(--text-color); color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; letter-spacing: 1px; transition: opacity 0.2s; }
+        .btn-primary:hover { opacity: 0.85; }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); z-index: 100; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .modal-content { max-width: 500px; width: 100%; background: #ffffff; border: 1px solid var(--border-color); padding: 30px; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.08); }
+        .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 15px; }
+        .form-group { margin-bottom: 15px; text-align: left; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: #555; }
+        .form-control { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; outline: none; }
+        .settings-bar { position: absolute; bottom: 20px; left: 30px; display: flex; gap: 15px; z-index: 20; }
+        .icon-btn { background: rgba(255,255,255,0.8); border: 1px solid var(--border-color); padding: 10px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; backdrop-filter: blur(5px); }
+    </style>
+</head>
+<body class="mode-radar">
+
+    <div id="bgLayer" class="bg-layer mode-radar"></div>
+
+    <div id="onboardingModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">Güvenlik Paneli Kurulumu</div>
+            <p style="font-size:13px; color:#666; margin-bottom:20px;">Devam etmek için çerez politikasını onaylayın ve kimliğinizi girin.</p>
+            <div class="form-group">
+                <label>Kullanıcı Adı</label>
+                <input type="text" id="setupName" class="form-control" value="Hava Üsteğmen">
+            </div>
+            <div class="form-group">
+                <label>4 Haneli PIN Kodu</label>
+                <input type="password" id="setupPin" class="form-control" maxlength="4" value="9532">
+            </div>
+            <div class="form-group" style="display:flex; align-items:center; gap:10px;">
+                <input type="checkbox" id="privacyConsent" checked style="width:18px; height:18px;">
+                <label for="privacyConsent" style="margin:0; font-size:12px;">Gizlilik ve çerez koşullarını kabul ediyorum.</label>
+            </div>
+            <button class="btn-primary" onclick="completeSetup()" style="margin-top:10px;">Sistemi Başlat</button>
+        </div>
+    </div>
+
+    <div class="top-bar">
+        <div class="brand" id="uiBrandTitle">TESLA GÜVENLİK SİSTEMİ</div>
+        <div class="status-badge" id="systemStatus">SİSTEM DEVRE DIŞI</div>
+    </div>
+
+    <div class="container">
+        <div class="sentry-box">
+            <div class="radar-icon"></div>
+            <div class="sentry-title" id="uiMainTitle">SENTRY MODE</div>
+            <div class="sentry-subtitle" id="uiSubTitle">Cihaz Korumaya Hazır</div>
+
+            <div class="pin-display">
+                <div class="pin-dot" id="dot0"></div>
+                <div class="pin-dot" id="dot1"></div>
+                <div class="pin-dot" id="dot2"></div>
+                <div class="pin-dot" id="dot3"></div>
+            </div>
+
+            <div class="keypad">
+                <button class="key-btn" onclick="pressKey('1')">1</button>
+                <button class="key-btn" onclick="pressKey('2')">2</button>
+                <button class="key-btn" onclick="pressKey('3')">3</button>
+                <button class="key-btn" onclick="pressKey('4')">4</button>
+                <button class="key-btn" onclick="pressKey('5')">5</button>
+                <button class="key-btn" onclick="pressKey('6')">6</button>
+                <button class="key-btn" onclick="pressKey('7')">7</button>
+                <button class="key-btn" onclick="pressKey('8')">8</button>
+                <button class="key-btn" onclick="pressKey('9')">9</button>
+                <button class="key-btn" onclick="clearPin()">C</button>
+                <button class="key-btn" onclick="pressKey('0')">0</button>
+                <button class="key-btn" onclick="submitPin()">✔</button>
+            </div>
+
+            <button class="btn-primary" id="armBtn" onclick="toggleArmSystem()">KORUMAYI BAŞLAT (ARM)</button>
+        </div>
+    </div>
+
+    <div class="settings-bar">
+        <button class="icon-btn" onclick="toggleFullscreen()">Tam Ekran</button>
+        <button class="icon-btn" onclick="openSettingsModal()">Ayarlar</button>
+    </div>
+
+    <div id="settingsModal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-title">Özelleştirme</div>
+            <div class="form-group">
+                <label>Arka Plan Teması</label>
+                <select id="bgThemeSelect" class="form-control" onchange="changeBackgroundTheme()">
+                    <option value="mode-radar">Tesla Radar Grid</option>
+                    <option value="mode-cctv">CCTV Simülasyonu</option>
+                    <option value="mode-white">Minimal Saf Beyaz</option>
+                    <option value="mode-cyber">Cyber Grid</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Alarm Sesi Profili</label>
+                <select id="alarmFreqSelect" class="form-control">
+                    <option value="police">Polis Siren</option>
+                    <option value="strobe">Yüksek Strobe Bip</option>
+                    <option value="deep">Sub-Bass Derin Alarm</option>
+                </select>
+            </div>
+            <button class="btn-primary" onclick="closeSettingsModal()">Kaydet ve Kapat</button>
+        </div>
+    </div>
+
+    <script>
+        let correctPin = "9532";
+        let enteredPin = "";
+        let isArmed = false;
+        let isAlarmTriggered = false;
+        let disarmTimer = null;
+        let audioCtx = null;
+        let alarmInterval = null;
+
+        function completeSetup() {
+            const name = document.getElementById('setupName').value;
+            const pin = document.getElementById('setupPin').value;
+            if(pin.length !== 4) { alert("4 haneli PIN girin."); return; }
+            correctPin = pin;
+            document.getElementById('uiBrandTitle').innerText = `${name.toUpperCase()} - TESLA GÜVENLİK`;
+            document.getElementById('onboardingModal').style.display = 'none';
+        }
+
+        function pressKey(num) {
+            if(enteredPin.length < 4) { enteredPin += num; updatePinDots(); }
+        }
+
+        function clearPin() { enteredPin = ""; updatePinDots(); }
+
+        function updatePinDots() {
+            for(let i=0; i<4; i++) {
+                const dot = document.getElementById(`dot${i}`);
+                if(i < enteredPin.length) dot.classList.add('filled');
+                else dot.classList.remove('filled');
+            }
+        }
+
+        function submitPin() {
+            if(enteredPin === correctPin) { disarmSystem(); }
+            else { alert("Hatalı PIN!"); clearPin(); }
+        }
+
+        function toggleArmSystem() {
+            if(!isArmed) {
+                isArmed = true; isAlarmTriggered = false;
+                document.getElementById('systemStatus').innerText = "SİSTEM KORUMADA (3 DK)";
+                document.getElementById('systemStatus').className = "status-badge armed";
+                document.getElementById('armBtn').innerText = "KORUMAYI İPTAL ET";
+                document.getElementById('uiSubTitle').innerText = "3 Dakikalık Akıllı Nöbet Aktif";
+
+                disarmTimer = setTimeout(() => {
+                    if(isArmed && !isAlarmTriggered) {
+                        disarmSystem();
+                        alert("3 dakika doldu. Sistem otomatik açıldı.");
+                    }
+                }, 180000);
+            } else {
+                let pinCheck = prompt("PIN girin:");
+                if(pinCheck === correctPin) disarmSystem();
+                else alert("Hatalı PIN!");
+            }
+        }
+
+        function disarmSystem() {
+            isArmed = false; isAlarmTriggered = false;
+            clearTimeout(disarmTimer);
+            stopAlarmSound();
+            document.getElementById('systemStatus').innerText = "SİSTEM DEVRE DIŞI";
+            document.getElementById('systemStatus').className = "status-badge";
+            document.getElementById('armBtn').innerText = "KORUMAYI BAŞLAT (ARM)";
+            document.getElementById('uiSubTitle').innerText = "Cihaz Korumaya Hazır";
+            clearPin();
+        }
+
+        window.addEventListener('mousemove', triggerAlarmCheck);
+        window.addEventListener('keydown', triggerAlarmCheck);
+        window.addEventListener('click', triggerAlarmCheck);
+
+        function triggerAlarmCheck() {
+            if(isArmed && !isAlarmTriggered) {
+                isAlarmTriggered = true;
+                document.getElementById('systemStatus').innerText = "ALARM TETİKLENDİ!";
+                document.getElementById('systemStatus').className = "status-badge alarm";
+                startAlarmSound();
+            }
+        }
+
+        function startAlarmSound() {
+            if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            let freq = 800;
+            alarmInterval = setInterval(() => {
+                if(!isAlarmTriggered) return;
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                freq = freq === 800 ? 1200 : 800;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+            }, 200);
+        }
+
+        function stopAlarmSound() {
+            if(alarmInterval) { clearInterval(alarmInterval); alarmInterval = null; }
+        }
+
+        function toggleFullscreen() {
+            if(!document.fullscreenElement) document.documentElement.requestFlags || document.documentElement.requestFullscreen();
+            else if(document.exitFullscreen) document.exitFullscreen();
+        }
+
+        function openSettingsModal() { document.getElementById('settingsModal').style.display = 'flex'; }
+        function closeSettingsModal() { document.getElementById('settingsModal').style.display = 'none'; }
+        function changeBackgroundTheme() {
+            const theme = document.getElementById('bgThemeSelect').value;
+            document.body.className = theme;
+            document.getElementById('bgLayer').className = `bg-layer ${theme}`;
+        }
+    </script>
+</body>
+</html>
